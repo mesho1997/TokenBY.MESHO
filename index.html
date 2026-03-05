@@ -230,15 +230,13 @@
 <body class="p-6">
     <div class="max-w-7xl mx-auto">
         
-        <!-- ===== عنوان الموقع ===== -->
-        <!-- تم إزالة "الإصدار النهائي" من هنا -->
+        <!-- عنوان الموقع -->
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold text-white flex items-center gap-3">
                 <i class="fas fa-shield-halbed text-yellow-300"></i>
                 <span>فاحص التوكنات</span>
             </h1>
             <div class="flex gap-4 text-white/80">
-                <!-- تم إزالة الترس وصورة البروفيل، بقيت أيقونة الجرس فقط -->
                 <i class="fas fa-bell cursor-pointer hover:text-white transition"></i>
             </div>
         </div>
@@ -367,21 +365,21 @@
                 </div>
             </div>
 
-            <!-- غير موثق -->
-            <div class="stat-card bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl p-5 text-white shadow-lg">
+            <!-- Unclaimed (حسابات غير مكتملة) -->
+            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-question-circle text-xl"></i>
+                        <i class="fas fa-user-clock text-xl"></i>
                     </div>
-                    <span class="text-3xl font-bold" id="unverifiedCount">0</span>
+                    <span class="text-3xl font-bold" id="unclaimedCount">0</span>
                 </div>
-                <div class="text-sm opacity-90">غير موثق ⚠️</div>
-                <div class="text-xs opacity-75">بريد وهاتف غير موثقين</div>
+                <div class="text-sm opacity-90">Unclaimed ⏳</div>
+                <div class="text-xs opacity-75">حسابات غير مكتملة</div>
                 <div class="mt-3 flex gap-2">
-                    <button onclick="downloadResults('unverified')" class="flex-1 bg-white/20 hover:bg-white/30 rounded-lg py-1 text-xs flex items-center justify-center gap-1 transition">
+                    <button onclick="downloadResults('unclaimed')" class="flex-1 bg-white/20 hover:bg-white/30 rounded-lg py-1 text-xs flex items-center justify-center gap-1 transition">
                         <i class="fas fa-download"></i> تحميل
                     </button>
-                    <button onclick="viewResults('unverified')" class="flex-1 bg-white/20 hover:bg-white/30 rounded-lg py-1 text-xs flex items-center justify-center gap-1 transition">
+                    <button onclick="viewResults('unclaimed')" class="flex-1 bg-white/20 hover:bg-white/30 rounded-lg py-1 text-xs flex items-center justify-center gap-1 transition">
                         <i class="fas fa-eye"></i> عرض
                     </button>
                 </div>
@@ -497,7 +495,7 @@
             working: [],
             phoneLocked: [],
             emailLocked: [],
-            unverified: [],
+            unclaimed: [],
             invalid: [],
             errors: []
         };
@@ -514,10 +512,11 @@
             document.getElementById('tokensInput').value = '';
         }
 
+        // ==================== دالة تحميل نموذج (بالتوكنات المطلوبة) ====================
         function loadExample() {
             document.getElementById('tokensInput').value = 
-       
-                'Mesho';
+               
+                '..';   // Unclaimed
         }
 
         // ==================== دالة النوم ====================
@@ -545,7 +544,7 @@
             setTimeout(() => errorDiv.classList.add('hidden'), 5000);
         }
 
-        // ==================== دالة التصنيف ====================
+        // ==================== دالة التصنيف حسب حالتك ====================
         function classifyToken(data) {
             if (!data || !data.id) {
                 return {
@@ -561,7 +560,7 @@
             const emailVerified = data.verified === true;
             const phoneVerified = !!data.phone;
             
-            // Phone Locked (بريد موثق + هاتف غير موثق)
+            // الحالة 1: Phone Locked (بريد موثق + هاتف غير موثق)
             if (emailVerified && !phoneVerified) {
                 return {
                     status: 'phoneLocked',
@@ -571,11 +570,11 @@
                     mfa: data.mfa_enabled ? '🔐' : '🔓',
                     username: data.username,
                     id: data.id,
-                    message: '📱 Phone Locked - البريد موثق والهاتف غير موثق'
+                    message: '📱 Phone Locked - بريد موثق - هاتف غير موثق'
                 };
             }
             
-            // Email Locked (بريد غير موثق + هاتف موثق)
+            // الحالة 2: Email Locked (بريد غير موثق + هاتف موثق)
             if (!emailVerified && phoneVerified) {
                 return {
                     status: 'emailLocked',
@@ -585,11 +584,11 @@
                     mfa: data.mfa_enabled ? '🔐' : '🔓',
                     username: data.username,
                     id: data.id,
-                    message: '🔒 Email Locked - البريد غير موثق والهاتف موثق'
+                    message: '🔒 Email Locked - بريد غير موثق - هاتف موثق'
                 };
             }
             
-            // شغال بالكامل (كلاهما موثق)
+            // الحالة 3: شغال بالكامل (كلاهما موثق)
             if (emailVerified && phoneVerified) {
                 return {
                     status: 'working',
@@ -603,17 +602,17 @@
                 };
             }
             
-            // غير موثق (كلاهما غير موثق)
+            // الحالة 4: Unclaimed (كلاهما غير موثق) - وهذا ينطبق على التوكن الثالث
             if (!emailVerified && !phoneVerified) {
                 return {
-                    status: 'unverified',
+                    status: 'unclaimed',
                     email: '🔒',
                     phone: '🔒',
                     nitro: '❌',
                     mfa: '❌',
                     username: data.username,
                     id: data.id,
-                    message: '⚠️ حساب غير موثق'
+                    message: '⏳ Unclaimed - حساب غير مكتمل (بريد وهاتف غير موثقين)'
                 };
             }
             
@@ -718,7 +717,7 @@
                         case 'working': results.working.push(token); break;
                         case 'phoneLocked': results.phoneLocked.push(token); break;
                         case 'emailLocked': results.emailLocked.push(token); break;
-                        case 'unverified': results.unverified.push(token); break;
+                        case 'unclaimed': results.unclaimed.push(token); break;
                         case 'invalid': results.invalid.push(token); break;
                         default: results.errors.push(token);
                     }
@@ -753,7 +752,7 @@
                 working: [],
                 phoneLocked: [],
                 emailLocked: [],
-                unverified: [],
+                unclaimed: [],
                 invalid: [],
                 errors: []
             };
@@ -765,7 +764,7 @@
             document.getElementById('workingCount').textContent = results.working.length;
             document.getElementById('phoneLockedCount').textContent = results.phoneLocked.length;
             document.getElementById('emailLockedCount').textContent = results.emailLocked.length;
-            document.getElementById('unverifiedCount').textContent = results.unverified.length;
+            document.getElementById('unclaimedCount').textContent = results.unclaimed.length;
             document.getElementById('invalidCount').textContent = results.invalid.length;
             document.getElementById('errorsCount').textContent = results.errors.length;
 
@@ -787,7 +786,7 @@
                     case 'working': statusText = '✅ شغال بالكامل'; statusClass = 'text-green-400'; break;
                     case 'phoneLocked': statusText = '📱 Phone Locked'; statusClass = 'text-orange-400'; break;
                     case 'emailLocked': statusText = '🔒 Email Locked'; statusClass = 'text-blue-400'; break;
-                    case 'unverified': statusText = '⚠️ غير موثق'; statusClass = 'text-gray-400'; break;
+                    case 'unclaimed': statusText = '⏳ Unclaimed'; statusClass = 'text-purple-400'; break;
                     case 'invalid': statusText = '❌ غير صالح'; statusClass = 'text-red-400'; break;
                     default: statusText = '⚠️ خطأ'; statusClass = 'text-yellow-400';
                 }
@@ -820,7 +819,7 @@
                 'working': { list: results.working, title: 'التوكنات الشغالة بالكامل ✅' },
                 'phoneLocked': { list: results.phoneLocked, title: 'التوكنات Phone Locked 📱' },
                 'emailLocked': { list: results.emailLocked, title: 'التوكنات Email Locked 🔒' },
-                'unverified': { list: results.unverified, title: 'التوكنات غير الموثقة ⚠️' },
+                'unclaimed': { list: results.unclaimed, title: 'التوكنات Unclaimed ⏳' },
                 'invalid': { list: results.invalid, title: 'التوكنات غير الصالحة ❌' },
                 'errors': { list: results.errors, title: 'التوكنات مع أخطاء ⚠️' }
             };
@@ -844,7 +843,7 @@
                             <button class="copy-btn" onclick="copyToken('${token}')"><i class="fas fa-copy"></i> نسخ</button>
                         </div>
                         <div class="token-text">${token}</div>
-                        ${details && details.message ? `<div class="text-sm ${details.status === 'phoneLocked' ? 'text-orange-400' : details.status === 'emailLocked' ? 'text-blue-400' : 'text-gray-400'}">${details.message}</div>` : ''}
+                        ${details && details.message ? `<div class="text-sm ${details.status === 'phoneLocked' ? 'text-orange-400' : details.status === 'emailLocked' ? 'text-blue-400' : details.status === 'unclaimed' ? 'text-purple-400' : 'text-gray-400'}">${details.message}</div>` : ''}
                     </div>
                 `;
             });
@@ -895,7 +894,7 @@
                 case 'working': list = results.working; break;
                 case 'phoneLocked': list = results.phoneLocked; break;
                 case 'emailLocked': list = results.emailLocked; break;
-                case 'unverified': list = results.unverified; break;
+                case 'unclaimed': list = results.unclaimed; break;
                 case 'invalid': list = results.invalid; break;
                 case 'errors': list = results.errors; break;
                 default: return;
